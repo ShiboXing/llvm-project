@@ -41,7 +41,6 @@ struct SimplifyRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
     // Look through the input of the current transpose.
     mlir::Value transposeInput = op.getOperand();
     TransposeOp transposeInputOp = transposeInput.getDefiningOp<TransposeOp>();
-
     // Input defined by another transpose? If not, no match.
     if (!transposeInputOp)
       return failure();
@@ -52,11 +51,39 @@ struct SimplifyRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
   }
 };
 
+struct AddRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
+  /// We register this pattern to match every toy.transpose in the IR.
+  /// The "benefit" is used by the framework to order the patterns and process
+  /// them in order of profitability.
+  AddRedundantTranspose(mlir::MLIRContext *context)
+      : OpRewritePattern<TransposeOp>(context, /*benefit=*/1) {}
+      
+  llvm::LogicalResult
+  matchAndRewrite(TransposeOp op,
+                  mlir::PatternRewriter &rewriter) const override {
+    if (op->hasAttr("pattern.processed"))
+      return failure();
+    rewriter.setInsertionPointAfter(op);
+    mlir::Value t_in = op.getOperand();
+    mlir::Value t_out = op.getResult();
+    mlir::Location loc = op.getLoc();
+    
+    // auto new_t = rewriter.create<TransposeOp>(
+    //     op.getLoc(),
+    //     t_out
+    // );
+    // rewriter.replaceOp(op, {new_t.getResult()});
+
+    return success();
+  }
+};
+
 /// Register our patterns as "canonicalization" patterns on the TransposeOp so
 /// that they can be picked up by the Canonicalization framework.
 void TransposeOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                               MLIRContext *context) {
-  results.add<SimplifyRedundantTranspose>(context);
+  // results.add<SimplifyRedundantTranspose>(context);
+  results.add<AddRedundantTranspose>(context);
 }
 
 /// Register our patterns as "canonicalization" patterns on the ReshapeOp so

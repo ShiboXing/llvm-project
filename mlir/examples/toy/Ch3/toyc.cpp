@@ -62,6 +62,7 @@ static cl::opt<enum Action> emitAction(
     cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")));
 
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
+static cl::opt<bool> enableFoo = cl::opt<bool>("foo", cl::desc("Enable optimizations"));
 
 /// Returns a Toy AST resulting from parsing the file or a nullptr on error.
 static std::unique_ptr<toy::ModuleAST>
