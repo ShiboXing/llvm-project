@@ -51,29 +51,20 @@ struct SimplifyRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
   }
 };
 
-struct AddRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
+struct SimplifyWeird : public mlir::OpRewritePattern<TransposeOp> {
   /// We register this pattern to match every toy.transpose in the IR.
   /// The "benefit" is used by the framework to order the patterns and process
   /// them in order of profitability.
-  AddRedundantTranspose(mlir::MLIRContext *context)
+  SimplifyWeird(mlir::MLIRContext *context)
       : OpRewritePattern<TransposeOp>(context, /*benefit=*/1) {}
       
   llvm::LogicalResult
   matchAndRewrite(TransposeOp op,
                   mlir::PatternRewriter &rewriter) const override {
-    if (op->hasAttr("pattern.processed"))
-      return failure();
-    rewriter.setInsertionPointAfter(op);
-    mlir::Value t_in = op.getOperand();
-    mlir::Value t_out = op.getResult();
-    mlir::Location loc = op.getLoc();
     
-    // auto new_t = rewriter.create<TransposeOp>(
-    //     op.getLoc(),
-    //     t_out
-    // );
-    // rewriter.replaceOp(op, {new_t.getResult()});
-
+    mlir::Value transposeInput = op.getOperand();
+    rewriter.replaceOp(op, {op.getOperand()});
+    
     return success();
   }
 };
@@ -82,8 +73,8 @@ struct AddRedundantTranspose : public mlir::OpRewritePattern<TransposeOp> {
 /// that they can be picked up by the Canonicalization framework.
 void TransposeOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                               MLIRContext *context) {
-  // results.add<SimplifyRedundantTranspose>(context);
-  results.add<AddRedundantTranspose>(context);
+  results.add<SimplifyRedundantTranspose>(context);
+  results.add<SimplifyWeird>(context);
 }
 
 /// Register our patterns as "canonicalization" patterns on the ReshapeOp so
